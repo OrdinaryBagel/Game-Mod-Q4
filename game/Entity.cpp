@@ -121,6 +121,7 @@ const idEventDef EV_AppendTarget( "appendTarget", "E", 'f' );
 const idEventDef EV_RemoveTarget( "removeTarget", "e" );
 // mekberg:
 const idEventDef EV_SetHealth( "setHealth", "f" );
+const idEventDef EV_SetPLevel("setPLevel", "f");
 // RAVEN END
 
 ABSTRACT_DECLARATION( idClass, idEntity )
@@ -220,6 +221,7 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_RemoveTarget,			idEntity::Event_RemoveTarget )
 // mekberg: added
 	EVENT( EV_SetHealth,			idEntity::Event_SetHealth )
+	EVENT(EV_SetPLevel, idEntity::Event_SetPLevel)
 // RAVEN END
 END_CLASS
 
@@ -491,6 +493,11 @@ idEntity::idEntity() {
 	renderView		= NULL;
 	cameraTarget	= NULL;
 	health			= 0;
+	plevel = 0;
+	spd = 0;
+	pow = 0;
+	def = 0;
+
 
 	physics			= NULL;
 	bindMaster		= NULL;
@@ -527,7 +534,35 @@ idEntity::idEntity() {
 	predictTime = 0;
 // RAVEN END
 }
+//identity::rpgcombat
+void idEntity::rpgcombat(idEntity *player, idEntity *enemy) {
+	if (player==gameLocal.GetLocalPlayer() && enemy->IsType(idAI::GetClassType())) {
+		//player->IsType(idPlayer::GetClassType())
+		if(player->plevel ==0){
+			gameLocal.GetLocalPlayer()->classSelect();
+		}
+		else{
+			gameLocal.GetLocalPlayer()->combatstart();
+		}
+		gameLocal.GetLocalPlayer()->villain = (idAI*)enemy;
+		if (player->turncount <= 0) {
+			player->turncount = ((gameLocal.GetLocalPlayer()->spd) + 1) / 2;
+			gameLocal.GetLocalPlayer()->villain->pow = ((enemy->spawnArgs.GetInt("health")) / 10) + 1;
+			gameLocal.GetLocalPlayer()->villain->def = ((enemy->spawnArgs.GetInt("health")) / 10) + 1;
+		}
+		gameLocal.SetIsFrozen(true);
+		player->incombat = true;
+		if (player->health <= 0 || enemy->health <= 0) {
+			gameLocal.SetIsFrozen(false);
+			gameLocal.GetLocalPlayer()->combatend();
+			gameLocal.GetLocalPlayer()->villain->Killed(NULL, NULL, 10, idVec3(0, 0, 0), 0);
+			gameLocal.GetLocalPlayer()->turncount = 0;
+			player->incombat = false;
+		}
+	}
+	
 
+}
 /*
 ================
 idEntity::Spawn
@@ -3666,7 +3701,7 @@ void idEntity::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 			if ( health < -999 ) {
 				health = -999;
 			}
-
+			//project here
 			Killed( inflictor, attacker, damage, dir, location );
 		} else {
 			Pain( inflictor, attacker, damage, dir, location );
@@ -4890,6 +4925,12 @@ idEntity::Event_SetHealth
 */
 void idEntity::Event_SetHealth( float newHealth ) {
 	health =  newHealth;
+}
+void idEntity::Event_SetPLevel(int newpLevel) {
+	plevel = newpLevel;
+}
+void idEntity::Event_AddPExp(int newpExp) {
+	pexp += newpExp;
 }
 // RAVEN END
 

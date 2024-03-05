@@ -1141,6 +1141,12 @@ void idAI::Think( void ) {
 	if ( CheckDormant() ) {
 		return;
 	}
+	if (gameLocal.GetIsFrozen()) {
+		ai_freeze.SetBool(true);
+	}
+	else {
+		ai_freeze.SetBool(false);
+	}
 
 	// Simple think this frame?
 	aifl.simpleThink = aiManager.IsSimpleThink ( this );
@@ -1613,7 +1619,6 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	idAngles			ang;
 	const char*			modelDeath;
 	const idKeyValue*	kv;
-	
 	if ( g_debugDamage.GetBool() ) {
 		gameLocal.Printf( "Damage: joint: '%s', zone '%s'\n", animator.GetJointName( ( jointHandle_t )location ), 
 			GetDamageGroup( location ) );
@@ -3667,6 +3672,35 @@ idAI::
 */
 
 void idAI::OnDeath( void ){
+	idPlayer *player= gameLocal.GetLocalPlayer();
+	player->pexp += 50;
+	if (player->pexp >= ((player->plevel) * 100)) {
+		player->pexp -= ((player->plevel) * 100);
+		player->plevel += 1;
+		player->mana = 100;
+		player->health = player->inventory.maxHealth;
+		if (player->herotype == 'r') {
+			player->spd += 2;
+			player->def += ((player->plevel)%2);
+			player->pow += 1;
+		}
+		else if (player->herotype == 'k') {
+			player->spd += ((player->plevel) % 2);
+			player->def += 2;
+			player->pow += 1;
+		}
+		else if (player->herotype == 'w') {
+			player->spd += ((player->plevel) % 2);
+			player->def += 1;
+			player->pow += 2;
+		}
+		else if (player->herotype == 'm') {
+			player->spd += 1;
+			player->def += ((player->plevel) % 2);
+			player->pow += 2;
+		}
+		
+	}
 	if( vehicleController.IsDriving() ){
 		usercmd_t				usercmd;
 

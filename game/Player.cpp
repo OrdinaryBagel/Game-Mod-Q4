@@ -109,7 +109,7 @@ const idEventDef EV_Player_SetExtraProjPassEntity( "setExtraProjPassEntity", "E"
 const idEventDef EV_Player_SetArmor( "setArmor", "f" );
 const idEventDef EV_Player_DamageEffect( "damageEffect", "sE" );
 const idEventDef EV_Player_AllowFallDamage( "allowFallDamage", "d" );
-
+const idEventDef EV_Player_SetLevel("setLevel", "f");
 // mekberg: allow enabling/disabling of objectives
 const idEventDef EV_Player_EnableObjectives( "enableObjectives" );
 const idEventDef EV_Player_DisableObjectives( "disableObjectives" );
@@ -198,6 +198,7 @@ const idVec4 defaultHitscanTint( 0.4f, 1.0f, 0.4f, 1.0f );
 idInventory::Clear
 ==============
 */
+
 void idInventory::Clear( void ) {
 	maxHealth			= 0;
 	weapons				= 0;
@@ -206,7 +207,6 @@ void idInventory::Clear( void ) {
 	armor				= 0;
 	maxarmor			= 0;
 	secretAreasDiscovered = 0;
-
 	memset( ammo, 0, sizeof( ammo ) );
 
 	ClearPowerUps();
@@ -1103,8 +1103,9 @@ idPlayer::idPlayer() {
 	lastSavingThrowTime		= 0;
 
 	weapon					= NULL;
-
 	hud						= NULL;
+	villain = NULL;
+	villainhp = 0;
 	mphud					= NULL;
 	objectiveSystem			= NULL;
 	objectiveSystemOpen		= false;
@@ -1805,6 +1806,15 @@ idPlayer::Spawn
 Prepare any resources used by the player.
 ==============
 */
+void idPlayer::combatstart(void) {
+	hud->HandleNamedEvent("combatstart");
+}
+void idPlayer::classSelect(void) {
+	hud->HandleNamedEvent("classSelect");
+}
+void idPlayer::combatend(void) {
+	hud->HandleNamedEvent("combatend");
+}
 void idPlayer::Spawn( void ) {
 	idStr		temp;
 	idBounds	bounds;
@@ -3399,6 +3409,41 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 		_hud->SetStateFloat	( "player_healthpct", idMath::ClampFloat ( 0.0f, 1.0f, (float)health / (float)inventory.maxHealth ) );
 		_hud->HandleNamedEvent ( "updateHealth" );
 	}
+	temp = _hud->State().GetInt("player_level", "-1");
+	if (temp != plevel) {
+		_hud->SetStateInt("player_level", plevel);
+		_hud->HandleNamedEvent("updatelevel");
+	}
+	temp = _hud->State().GetInt("player_exp", "-1");
+	if (temp != pexp) {
+		_hud->SetStateInt("player_exp", pexp);
+		_hud->HandleNamedEvent("updateexp");
+	}
+	temp = _hud->State().GetInt("player_spd", "-1");
+	if (temp != spd) {
+		_hud->SetStateInt("player_spd", spd);
+		_hud->HandleNamedEvent("updateexp");
+	}
+	temp = _hud->State().GetInt("player_pow", "-1");
+	if (temp != pow) {
+		_hud->SetStateInt("player_pow", pow);
+		_hud->HandleNamedEvent("updatepow");
+	}
+	temp = _hud->State().GetInt("player_turn", "-1");
+	if (temp != pow) {
+		_hud->SetStateInt("player_turn", turncount);
+		_hud->HandleNamedEvent("updateturn");
+	}
+	temp = _hud->State().GetInt("player_def", "-1");
+	if (temp != def) {
+		_hud->SetStateInt("player_def", def);
+		_hud->HandleNamedEvent("updatedef");
+	}
+	temp = _hud->State().GetInt("player_mana", "-1");
+	if (temp != mana) {
+		_hud->SetStateInt("player_mana", mana);
+		_hud->HandleNamedEvent("updatemana");
+	}
 		
 	temp = _hud->State().GetInt ( "player_armor", "-1" );
 	if ( temp != inventory.armor ) {
@@ -3966,7 +4011,7 @@ void idPlayer::FireWeapon( void ) {
 	idVec3 muzzle;
 
 //RITUAL BEGIN
-	if( gameLocal.GetIsFrozen() && gameLocal.gameType == GAME_DEADZONE )
+	if( gameLocal.GetIsFrozen())
 	{
 		return;
 	}
@@ -6108,7 +6153,7 @@ void idPlayer::Weapon_Combat( void ) {
 	// check for attack
 	pfl.weaponFired = false;
  	if ( !influenceActive ) {
- 		if ( ( usercmd.buttons & BUTTON_ATTACK ) && !weaponGone ) {
+ 		if ( ( usercmd.buttons & BUTTON_ATTACK ) && !weaponGone) {
  			FireWeapon();
  		} else if ( oldButtons & BUTTON_ATTACK ) {
  			pfl.attackHeld = false;
@@ -9284,7 +9329,7 @@ Called every tic for each player
 */
 void idPlayer::Think( void ) {
 	renderEntity_t *headRenderEnt;
- 
+	idPlayer* hero = gameLocal.GetLocalPlayer();
 	if ( talkingNPC ) {
 		if ( !talkingNPC.IsValid() ) {
 			talkingNPC = NULL;
@@ -9361,7 +9406,6 @@ void idPlayer::Think( void ) {
 	} else {
 		ClearCheatState();
 	}
-
 	aasSensor->Update();
 
 	if ( gameLocal.inCinematic && gameLocal.skipCinematic ) {
@@ -9390,14 +9434,207 @@ void idPlayer::Think( void ) {
 		usercmd.rightmove = 0;
 		usercmd.upmove = 0;
 	}
-
-	if( gameLocal.GetIsFrozen() && gameLocal.gameType == GAME_DEADZONE )
+	//where i will code from now on project rpg i hate my life
+	if( gameLocal.GetIsFrozen())
 	{
 		usercmd.forwardmove = 0;
 		usercmd.rightmove = 0;
 		usercmd.upmove = 0;
+		if (pfl.rpgconfirm) {
+			if (gameLocal.GetLocalPlayer()->plevel == 0) {
+				hero->pexp = 0;
+				hud->SetStateString("skill1", "Basic Attack");
+				if (usercmd.buttons & BUTTON_INGAMESTATS) {
+					hero->spd = 4;
+					hero->def = 1;
+					hero->pow = 2;
+					hero->herotype = 'r';
+					hud->SetStateString("skill2", "Multi-Attack");
+					hud->SetStateString("skill3", "Speed strike");
+					hud->SetStateString("skill4", "Blitz");
+					villainhp = villainhp - 300;
+					villain->AdjustHealthByDamage(300);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+				}
+				else if (usercmd.buttons & BUTTON_STRAFE) {
+					hero->spd = 1;
+					hero->def = 4;
+					hero->pow = 2;
+					hero->herotype = 'k';
+					hud->SetStateString("skill2", "Guard Stance");
+					hud->SetStateString("skill3", "Shield Bash");
+					hud->SetStateString("skill4", "Power Swing");
+					villainhp = villainhp - 300;
+					villain->AdjustHealthByDamage(300);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+				}
+				else if (usercmd.buttons & BUTTON_ATTACK) {
+					hero->spd = 1;
+					hero->def = 2;
+					hero->pow = 4;
+					hero->herotype = 'w';
+					hud->SetStateString("skill2", "Rage");
+					hud->SetStateString("skill3", "Sacrifical Hit");
+					hud->SetStateString("skill4", "Health Potion");
+					villainhp = villainhp - 300;
+					villain->AdjustHealthByDamage(300);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+				}
+				else if (usercmd.buttons & BUTTON_VOICECHAT) {
+					hero->spd = 2;
+					hero->def = 1;
+					hero->pow = 4;
+					hero->herotype = 'm';
+					hud->SetStateString("skill2", "Fire Ball");
+					hud->SetStateString("skill3", "Life Drain");
+					hud->SetStateString("skill4", "Meteor");
+					villainhp = villainhp - 300;
+					villain->AdjustHealthByDamage(300);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+				}
+				/*if (villainhp <= 0) {
+					villain->rpgcombat(hero, villain);
+				}*/
+			}
+			else {
+				if (usercmd.buttons & BUTTON_INGAMESTATS) {
+					damage = hero->pow * 10 / villain->def;
+					PlayAnim(ANIMCHANNEL_LEGS, "run_strafe_right", 0);
+					(ANIMCHANNEL_ALL, "raise", 0);
+					if (hero->mana < 100) {
+						mana += 10;
+						if (mana > 100) {
+							mana = 100;
+						}
+					}
+					villainhp = villainhp - damage;
+					villain->AdjustHealthByDamage(damage);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+					hero->turncount -= 1;
+				}
+				else if ((usercmd.buttons & BUTTON_STRAFE)&&(hero->mana >= 10)) {
+					if (hero->herotype == 'r') {
+						damage = (hero->pow * 10 / villain->def) + 9;
+						hero->mana -= 10;
+					}
+					else if (hero->herotype == 'k') {
+						hero->defstance = true;
+						hero->mana -= 10;
+					}
+					else if (hero->herotype == 'w') {
+						hero->rage = true;
+						hero->mana -= 10;
+					}
+					else if (hero->herotype == 'm') {
+						damage = (hero->pow * 40 / villain->def);
+						hero->mana -= 10;
+					}
+					villainhp = villainhp - damage;
+					villain->AdjustHealthByDamage(damage);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+					hero->turncount -= 1;
+					if(hero->herotype == 'm') {
+						hero->turncount -= 1;
+					}
+				}
+				else if ((usercmd.buttons & BUTTON_ATTACK) && (hero->mana >= 20)) {
+					if (hero->herotype == 'r') {
+						damage = (hero->spd * 40 / villain->def);
+						hero->mana -= 20;
+					}
+					else if (hero->herotype == 'k') {
+						damage = (hero->def * 10 / villain->def);
+						hero->mana -= 20;
+					}
+					else if (hero->herotype == 'w') {
+						damage = (hero->pow * 50 / villain->def);
+						hero->health -= 10;
+						hero->mana -= 20;
+					}
+					else if (hero->herotype == 'm') {
+						damage = (hero->pow * 5 / villain->def);
+						hero->health += damage;
+						if (hero->health >= hero->inventory.maxHealth) {
+							hero->health = hero->inventory.maxHealth;
+						}
+						hero->mana -= 20;
+					}
+					villainhp = villainhp - damage;
+					villain->AdjustHealthByDamage(damage);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+					hero->turncount -= 1;
+				}
+				else if ((usercmd.buttons & BUTTON_VOICECHAT) &&(hero->mana>=50)) {
+					if (hero->herotype == 'r') {
+						damage = (hero->spd* hero->pow * 30 / villain->def) + 9;
+						hero->mana -= 50;
+					}
+					else if (hero->herotype == 'k') {
+						damage = (hero->def * hero->pow * 30 / villain->def) + 9;
+						hero->mana -= 50;
+					}
+					else if (hero->herotype == 'w') {
+						hero->health += 50;
+						if (hero->health >= hero->inventory.maxHealth) {
+							hero->health = hero->inventory.maxHealth;
+						}
+						hero->mana -= 50;
+					}
+					else if (hero->herotype == 'm') {
+						damage = (hero->pow * hero->pow *60 / villain->def);
+						hero->mana -= 50;
+					}
+					villain->AdjustHealthByDamage(damage);
+					villain->rpgcombat(hero, villain);
+					pfl.rpgconfirm = false;
+					hero->turncount -= 1;
+					if (hero->herotype == 'm') {
+						hero->turncount -= 2;
+					}
+				}
+				/*if (villainhp <= 0) {
+					villain->rpgcombat(gameLocal.GetLocalPlayer(), villain);
+				}
+				*/
+			}
+		}
+		else {
+			hud->HandleNamedEvent("showdamage");
+			hud->SetStateInt("damagedealt", damage);
+			if (hero->turncount <= 0) {
+				damage = ((villain->pow*10) / (hero->def)) + 1;
+				Pain(NULL, NULL, damage, idVec3(0, 0, 0), 0);
+				hero->turncount += (((hero->spd) + 1) / 2);
+				if (hero->inventory.armor > 0) {
+					hero->inventory.armor -= damage;
+					if (damage > hero->inventory.armor) {
+						hero->health -= damage - hero->inventory.armor;
+					}
+				}
+				else {
+					hero->health -= damage;
+					villain->rpgcombat(hero, villain);
+				}
+				if (hero->health <= 0) {
+					hero->Killed(NULL, NULL, 10, idVec3(0, 0, 0), 0);
+				}
+				hud->HandleNamedEvent("showenemydamage");
+				hud->SetStateInt("damageenemydealt", damage);
+			}
+			if (usercmd.buttons & BUTTON_ZOOM) {
+				hud->HandleNamedEvent("closedamage");
+				pfl.rpgconfirm = true;
+				damage = 0;
+			}
+		}
 	}
-	
 	// zooming
 	bool zoom = (usercmd.buttons & BUTTON_ZOOM) && CanZoom();
 	if ( zoom != zoomed ) {
@@ -9485,7 +9722,8 @@ void idPlayer::Think( void ) {
 	// if we have an active gui, we will unrotate the view angles as
 	// we turn the mouse movements into gui events
 	idUserInterface *gui = ActiveGui();
-	if ( gui && gui != focusUI ) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	if (( gui && gui != focusUI )) {
 		RouteGuiMouse( gui );
 	}
 
@@ -10070,7 +10308,6 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	// RAVEN BEGIN
 	// twhitaker: difficulty levels
 	float modifiedDamageScale = damageScale;
-	
 	if ( !gameLocal.isMultiplayer ) {
 		if ( inflictor != gameLocal.world ) {
 			modifiedDamageScale *= ( 1.0f + gameLocal.GetDifficultyModifier() );
@@ -10261,7 +10498,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		if ( damage < 1 ) {
 			damage = 1;
 		}
-
+		//project start from here
 		int oldHealth = health;
 		health -= damage;
 
@@ -10321,6 +10558,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
   	lastDamageDir.Normalize();
 	lastDamageDef = damageDef->Index();
 	lastDamageLocation = location;
+	attacker->rpgcombat(gameLocal.GetLocalPlayer(), attacker);
 }
 
 /*
@@ -11191,7 +11429,6 @@ idPlayer::Event_SetArmor
 void idPlayer::Event_SetArmor( float newArmor ) {
 	inventory.armor = idMath::ClampInt( 0 , inventory.maxarmor, newArmor );
 }
-
 /*
 =============
 idPlayer::Event_SetExtraProjPassEntity

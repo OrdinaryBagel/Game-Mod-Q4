@@ -135,7 +135,18 @@ public:
 	idList< idEntityPtr<idEntity> >	targets;		// when this entity is activated these entities entity are activated
 
 	int						health;					// FIXME: do all objects really need health?
-
+	int plevel;
+	int pexp;
+	int spd;
+	int pow;
+	int def;
+	char herotype;
+	int turncount;
+	int damage;
+	int mana;
+	bool defstance;
+	bool rage;
+	bool incombat;
 // RAVEN BEGIN
 // ddynerman: optional pre-prediction
 	int						predictTime;
@@ -192,7 +203,7 @@ public:
 							~idEntity();
 
 	void					Spawn( void );
-
+	void					rpgcombat(idEntity *player, idEntity *enemy);
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
 
@@ -674,6 +685,8 @@ protected:
 	void					Event_RemoveTarget				( idEntity *removeMe );
 // mekberg: added
 	void					Event_SetHealth					( float newHealth );
+	void					Event_SetPLevel(int newPLevel);
+	void					Event_AddPExp(int newPExp);
 // RAVEN END
 };
 

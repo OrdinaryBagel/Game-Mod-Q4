@@ -2542,6 +2542,7 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		}
 		*/
 	}
+	this->rpgcombat(gameLocal.GetLocalPlayer(), this);
 }
 
 /*

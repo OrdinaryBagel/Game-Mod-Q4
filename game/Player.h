@@ -202,6 +202,7 @@ public:
 // RITUAL END
 	int						powerups;
 	int						armor;
+	bool inCombat; 
 	int						maxarmor;
 	int						ammo[ MAX_AMMO ];
 	int						clip[ MAX_WEAPONS ];
@@ -242,7 +243,6 @@ public:
 	int						MaxAmmoForAmmoClass( idPlayer *owner, const char *ammo_classname ) const;
 	int						AmmoIndexForWeaponClass( const char *weapon_classname, int *ammoRequired = NULL );
 	const char *			AmmoClassForWeaponClass( const char *weapon_classname);
-
 // RAVEN BEGIN
 // mekberg: if the player can pick up the ammo at this time
 	bool					DetermineAmmoAvailability( idPlayer* owner, const char *ammoName, int ammoIndex, int ammoAmount, int ammoMax );
@@ -269,7 +269,6 @@ public:
 
 class idPlayer : public idActor {
 public:
-
  	enum {
  		EVENT_IMPULSE = idEntity::EVENT_MAXEVENTS,
  		EVENT_EXIT_TELEPORTER,
@@ -327,6 +326,7 @@ public:
 		bool		hearingLoss		:1;
 		bool		objectiveFailed	:1;
 		bool		noFallingDamage :1;
+		bool		rpgconfirm : 1;
 	} pfl;
 		
 	// inventory
@@ -347,7 +347,8 @@ public:
 	bool					objectiveButtonReleased;
 	bool					disableHud;
 	bool					showNewObjectives;
-
+	int villainhp;
+	idAI* villain;
 	int						lastDmgTime;
 	int						deathClearContentsTime;
  	bool					doingDeathSkin;
@@ -430,7 +431,9 @@ public:
 
 							idPlayer();
 	virtual					~idPlayer();
-
+	void combatstart( void );
+	void combatend(void);
+	void classSelect(void);
 	void					Spawn( void );
 	void					Think( void );
 
