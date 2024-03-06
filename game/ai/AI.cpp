@@ -3674,6 +3674,7 @@ idAI::
 void idAI::OnDeath( void ){
 	idPlayer *player= gameLocal.GetLocalPlayer();
 	player->pexp += 50;
+	player->cash += 50;
 	if (player->pexp >= ((player->plevel) * 100)) {
 		player->pexp -= ((player->plevel) * 100);
 		player->plevel += 1;

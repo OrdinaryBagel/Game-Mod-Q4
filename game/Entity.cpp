@@ -494,6 +494,8 @@ idEntity::idEntity() {
 	cameraTarget	= NULL;
 	health			= 0;
 	plevel = 0;
+	cash = 0;
+	pexp = 0;
 	spd = 0;
 	pow = 0;
 	def = 0;
@@ -536,7 +538,7 @@ idEntity::idEntity() {
 }
 //identity::rpgcombat
 void idEntity::rpgcombat(idEntity *player, idEntity *enemy) {
-	if (player==gameLocal.GetLocalPlayer() && enemy->IsType(idAI::GetClassType())) {
+	if (player==gameLocal.GetLocalPlayer()&& !player->IsType(idAI::GetClassType()) && enemy->IsType(idAI::GetClassType())) {
 		//player->IsType(idPlayer::GetClassType())
 		if(player->plevel ==0){
 			gameLocal.GetLocalPlayer()->classSelect();
@@ -547,8 +549,8 @@ void idEntity::rpgcombat(idEntity *player, idEntity *enemy) {
 		gameLocal.GetLocalPlayer()->villain = (idAI*)enemy;
 		if (player->turncount <= 0) {
 			player->turncount = ((gameLocal.GetLocalPlayer()->spd) + 1) / 2;
-			gameLocal.GetLocalPlayer()->villain->pow = ((enemy->spawnArgs.GetInt("health")) / 10) + 1;
-			gameLocal.GetLocalPlayer()->villain->def = ((enemy->spawnArgs.GetInt("health")) / 10) + 1;
+			gameLocal.GetLocalPlayer()->villain->pow = ((enemy->spawnArgs.GetInt("health")) / 15) + 1;
+			gameLocal.GetLocalPlayer()->villain->def = ((enemy->spawnArgs.GetInt("health")) / 15) + 1;
 		}
 		gameLocal.SetIsFrozen(true);
 		player->incombat = true;

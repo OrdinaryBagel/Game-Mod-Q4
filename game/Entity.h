@@ -147,6 +147,11 @@ public:
 	bool defstance;
 	bool rage;
 	bool incombat;
+	int shopindex;
+	int cash;
+	bool itemdex[4];
+	bool equiped[5];
+	bool shopNext;
 // RAVEN BEGIN
 // ddynerman: optional pre-prediction
 	int						predictTime;
