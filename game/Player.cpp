@@ -9460,6 +9460,8 @@ void idPlayer::Think( void ) {
 					hero->equiped[4] = false;
 					hero->shopNext = true;
 					hero->shopindex = 0;
+					hero->rage = false;
+					hero->defstance = false;
 					hud->SetStateString("skill1", "Basic Attack");
 					if (usercmd.buttons & BUTTON_INGAMESTATS) {
 						hero->spd = 4;
@@ -9520,6 +9522,10 @@ void idPlayer::Think( void ) {
 				else {
 					if (usercmd.buttons & BUTTON_INGAMESTATS) {
 						damage = hero->pow * 10 / villain->def;
+						if (hero->rage) {
+							damage = damage * 2;
+							hero->rage = false;
+						}
 						if (hero->mana < 100) {
 							mana += 10;
 							if (mana > 100) {
@@ -9569,6 +9575,10 @@ void idPlayer::Think( void ) {
 						}
 						else if (hero->herotype == 'w') {
 							damage = (hero->pow * 50 / villain->def);
+							if (hero->rage) {
+								damage = damage * 2;
+								hero->rage = false;
+							}
 							hero->health -= 10;
 							hero->mana -= 20;
 						}
