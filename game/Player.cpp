@@ -9493,7 +9493,7 @@ void idPlayer::Think( void ) {
 						hero->pow = 4;
 						hero->herotype = 'w';
 						hud->SetStateString("skill2", "Rage");
-						hud->SetStateString("skill3", "Sacrifical Hit");
+						hud->SetStateString("skill3", "Sacrificial Hit");
 						hud->SetStateString("skill4", "Health Potion");
 						villainhp = villainhp - 300;
 						villain->AdjustHealthByDamage(300);
@@ -9560,11 +9560,11 @@ void idPlayer::Think( void ) {
 					}
 					else if ((usercmd.buttons & BUTTON_ATTACK) && (hero->mana >= 20)) {
 						if (hero->herotype == 'r') {
-							damage = (hero->spd * 40 / villain->def);
+							damage = (hero->spd * 30 / villain->def);
 							hero->mana -= 20;
 						}
 						else if (hero->herotype == 'k') {
-							damage = (hero->def * 10 / villain->def);
+							damage = (hero->def * 25 / villain->def);
 							hero->mana -= 20;
 						}
 						else if (hero->herotype == 'w') {
@@ -9573,7 +9573,7 @@ void idPlayer::Think( void ) {
 							hero->mana -= 20;
 						}
 						else if (hero->herotype == 'm') {
-							damage = (hero->pow * 5 / villain->def);
+							damage = (hero->pow * 10 / villain->def);
 							hero->health += damage;
 							if (hero->health >= hero->inventory.maxHealth) {
 								hero->health = hero->inventory.maxHealth;
@@ -9588,11 +9588,11 @@ void idPlayer::Think( void ) {
 					}
 					else if ((usercmd.buttons & BUTTON_VOICECHAT) && (hero->mana >= 50)) {
 						if (hero->herotype == 'r') {
-							damage = (hero->spd * hero->pow * 30 / villain->def) + 9;
+							damage = (hero->spd * hero->pow * 30 / villain->def);
 							hero->mana -= 50;
 						}
 						else if (hero->herotype == 'k') {
-							damage = (hero->def * hero->pow * 30 / villain->def) + 9;
+							damage = (hero->def * hero->pow * 30 / villain->def);
 							hero->mana -= 50;
 						}
 						else if (hero->herotype == 'w') {
@@ -9626,6 +9626,10 @@ void idPlayer::Think( void ) {
 				if (hero->turncount <= 0) {
 					int enemydamage;
 					enemydamage = ((villain->pow * 10) / (hero->def)) + 1;
+					if (hero->defstance) {
+						enemydamage = enemydamage / 2;
+						hero->defstance = false;
+					}
 					Pain(NULL, NULL, enemydamage, idVec3(0, 0, 0), 0);
 					hero->turncount += (((hero->spd) + 1) / 2);
 					if (hero->inventory.armor > 0) {
